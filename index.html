@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Grades by koorosh</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0 20px;
+            color: #333;
+        }
+
+        h2 {
+            color: #444;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        #student-list {
+            margin-top: 20px;
+        }
+
+        .student-item {
+            background-color: #fff;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .student-item label {
+            font-size: 16px;
+            margin-right: 15px;
+            font-weight: 600;
+        }
+
+        .student-item input {
+            padding: 8px 12px;
+            margin-right: 15px;
+            width: 200px;
+            font-size: 14px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .student-item input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        .percentage {
+            font-weight: bold;
+            margin-left: 15px;
+        }
+
+        .error {
+            color: #ff4d4d;
+            font-size: 14px;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+            margin: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
+        .student-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .student-actions button {
+            margin-left: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .student-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .student-item input {
+                width: 100%;
+                margin: 10px 0;
+            }
+
+            .student-actions button {
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>Enter Student Names and Scores</h2>
+
+<div id="error-message" class="error"></div>
+
+<div id="student-list"></div>
+
+<div>
+    <label for="student-name">Enter Student's Name:</label>
+    <input type="text" id="student-name" placeholder="Student Name">
+</div>
+
+<div style="text-align: center; margin-top: 30px;">
+    <button onclick="saveStudents()">Save Students (Names Only)</button>
+    <button onclick="saveAllData()">Save All Data (Names, Scores, Percentages)</button>
+    <button onclick="loadStudents()">Load Saved Students (Names Only)</button>
+    <button onclick="clearAllStudents()">Clear All Students</button>
+    <button onclick="loadAllData()">Load All Data (Names, Scores, Percentages)</button>
+</div>
+
+<script>
+    let students = []; // Array to hold student names and scores
+
+    // Add event listener for pressing Enter to add a student
+    document.getElementById("student-name").addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+            event.preventDefault(); // Prevent the default action (form submit)
+            addStudent(); // Add student when "Enter" is pressed
+        }
+    });
+
+    // Function to add a new student
+    function addStudent() {
+        const studentName = document.getElementById("student-name").value;
+        if (studentName.trim() === "") {
+            document.getElementById("error-message").textContent = "Please enter a valid student name.";
+            return;
+        }
+        students.push({ name: studentName, score: "", percentage: "", fractionalScore: "" });
+        document.getElementById("student-name").value = ""; // Clear the input field
+        document.getElementById("error-message").textContent = ""; // Clear error message
+        createStudentInputs();
+    }
+
+    // Function to create input fields for students
+    function createStudentInputs() {
+        const studentListDiv = document.getElementById("student-list");
+        studentListDiv.innerHTML = ""; // Clear previous inputs
+
+        students.forEach((student, index) => {
+            const studentDiv = document.createElement("div");
+            studentDiv.classList.add("student-item");
+
+            const label = document.createElement("label");
+            label.textContent = `${student.name}:`;
+            studentDiv.appendChild(label);
+
+            const scoreInput = document.createElement("input");
+            scoreInput.type = "text";
+            scoreInput.id = `score-${index}`;
+            scoreInput.placeholder = "Enter score (e.g., 12/30)";
+            scoreInput.value = student.fractionalScore; // Preserve the fractional score value
+            studentDiv.appendChild(scoreInput);
+
+            const percentageSpan = document.createElement("span");
+            percentageSpan.id = `percentage-${index}`;
+            percentageSpan.textContent = student.percentage ? ` - ${student.percentage}%` : '';
+            studentDiv.appendChild(percentageSpan);
+
+            // Actions (Delete Button)
+            const actionsDiv = document.createElement("div");
+            actionsDiv.classList.add("student-actions");
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "Delete";
+            deleteBtn.classList.add("delete-btn");
+            deleteBtn.onclick = () => deleteStudent(index);
+            actionsDiv.appendChild(deleteBtn);
+
+            studentDiv.appendChild(actionsDiv);
+
+            studentListDiv.appendChild(studentDiv);
+
+            // Add "Enter" key event listener to the score input field
+            const scoreInputElement = document.getElementById(`score-${index}`);
+            scoreInputElement.addEventListener("keydown", function (event) {
+                if (event.key === "Enter") {
+                    event.preventDefault(); // Prevent the default Enter key action
+                    updateScoreAndPercentage(index); // Update score and percentage
+                    if (students[index + 1]) {
+                        document.getElementById(`score-${index + 1}`).focus(); // Move to the next student input
+                    }
+                }
+            });
+        });
+    }
+
+    // Function to update score and percentage
+    function updateScoreAndPercentage(index) {
+        const scoreInput = document.getElementById(`score-${index}`).value;
+        const percentageSpan = document.getElementById(`percentage-${index}`);
+
+        const fractionRegex = /^(\d+(\.\d+)?)\/(\d+)$/;
+        const decimalRegex = /^(\d+(\.\d+)?)$/;
+
+        let match = scoreInput.match(fractionRegex);
+
+        if (match) {
+            const numerator = parseFloat(match[1]);
+            const denominator = parseFloat(match[3]);
+
+            if (denominator !== 0) {
+                const percentage = (numerator / denominator) * 100;
+                students[index].fractionalScore = scoreInput;
+                students[index].percentage = percentage.toFixed(2);
+                percentageSpan.textContent = ` - ${students[index].percentage}%`;
+            } else {
+                percentageSpan.textContent = "Error: Denominator cannot be zero.";
+            }
+        } else {
+            match = scoreInput.match(decimalRegex);
+            if (match) {
+                const decimalScore = parseFloat(match[1]);
+                students[index].fractionalScore = scoreInput;
+                students[index].percentage = (decimalScore * 100).toFixed(2);
+                percentageSpan.textContent = ` - ${students[index].percentage}%`;
+            } else {
+                percentageSpan.textContent = "Error: Invalid score format.";
+            }
+        }
+    }
+
+    // Function to delete a student
+    function deleteStudent(index) {
+        students.splice(index, 1); // Remove the student from the array
+        createStudentInputs(); // Re-render the student list
+    }
+
+    // Function to save only student names
+    function saveStudents() {
+        const studentNames = students.map(student => student.name);
+        localStorage.setItem("students", JSON.stringify(studentNames));
+        alert("Student names saved successfully!");
+    }
+
+    // Function to save all student data (name, score, percentage) to localStorage
+    function saveAllData() {
+        localStorage.setItem("studentsData", JSON.stringify(students));
+        alert("All student data saved successfully!");
+    }
+
+    // Function to load saved student names
+    function loadStudents() {
+        const savedStudents = JSON.parse(localStorage.getItem("students"));
+        if (savedStudents) {
+            students = savedStudents.map(name => ({ name: name, score: "", percentage: "", fractionalScore: "" }));
+            createStudentInputs();
+        } else {
+            alert("No saved students found.");
+        }
+    }
+
+    // Function to clear all student data
+    function clearAllStudents() {
+        const confirmation = confirm("Are you sure you want to clear all students?");
+        if (confirmation) {
+            students = [];
+            localStorage.removeItem("students");
+            createStudentInputs();
+        }
+    }
+
+    // Function to load all student data (name, score, percentage)
+    function loadAllData() {
+        const savedData = JSON.parse(localStorage.getItem("studentsData"));
+        if (savedData) {
+            students = savedData;
+            createStudentInputs();
+        } else {
+            alert("No saved data found.");
+        }
+    }
+</script>
+
+</body>
+</html>
